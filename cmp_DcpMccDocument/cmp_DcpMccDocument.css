@@ -1,0 +1,61 @@
+.my-notify-warning {
+    color:black;
+    background-color:lightgray;
+    font-size: x-large;
+    padding: 5px;
+}
+.card{
+    font-weight: bold;
+}
+.slds-card__body{
+    background-color:lightgray;  
+}
+.slds-modal__container {
+    max-width: 60rem !important;
+    width: 60% !important;
+}
+ .slds-form-element__control .slds-radio{
+    display:inline-block !important
+}
+
+.THIS .buttonWidth {
+    with:10.5rem;
+}
+
+
+.THIS .slds-hyphenate  {
+    text-align: center!important;
+}
+
+.content{
+    width: 60% ;
+    margin-left:-2% !important;
+}
+
+.description{
+    width: 58% ;
+}
+
+.spinner{
+   position: relative;
+   display: inline-block;
+   width: 51px;
+   vertical-align: middle;
+   white-space: nowrap;
+}
+
+.THIS textarea {
+    height: 10rem;
+}
+.disabled {
+    pointer-events: none;
+    opacity: 0.4;
+    user-select: none;
+    cursor: not-allowed;
+}
+.InnerDivs{
+    padding:1.3rem;
+}
+.MainDiv{
+    background-color: white;
+}

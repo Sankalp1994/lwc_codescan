@@ -1,0 +1,468 @@
+<!--
+    Author : Rupesh Kumar Pandey 
+    Date : 03-Jan-2021
+    Description : This Lightning Web Component is Responsible for Attaching a document to a MCC and setting the status of the MCC following all the validations 
+    Modification History: 
+    User Stories : US446765 ,US446750, US494829
+-->
+<template>
+    <!--1.On initial load of the component show spinner till the callouts are completed or Ds_LinkedContent records are fetched-->
+    <lightning-card title="MCC Document" icon-name="standard:account">
+        <!--2.Show spinner untill records are loaded / webservice call is successful-->
+        <template if:true={showSpinnerMain}>
+            <div class="slds-is-relative">
+                <c-cmp_-Reusable-spinner spinner-text={spinnerText1}>
+                </c-cmp_-Reusable-spinner>
+            </div>
+            <br />
+            <br />
+            <br />
+        </template>
+        <!--3.Once the records are loaded / webservice call is completed-->
+        <template if:false={showSpinnerMain}>
+            <!--Initial Screen with image in case there are no Documents attached to MCC-->
+            <template if:false={mccHasDocument}>
+                <!--Button Group-->
+                <lightning-button class="slds-text-link" name="New" label="New" title="Attach New Document"
+                    slot="actions" onclick={handleHTMLEvents}>
+                </lightning-button>
+                <lightning-button class="slds-text-link" name="linkexisting" label="Existing Document"
+                    title="Link Existing Document" slot="actions" onclick={handleHTMLEvents}>
+                </lightning-button>
+                <label style="margin-left: 25px;">The MCC Document can be generated in </label><a name="NGSC"
+                    class="slds-text-title_bold slds-text-heading_small" onclick={handleHTMLEvents}
+                    data-value={NGSCApplicationURL}>NGSC Application</a>
+                </br>
+                <!--Image-->
+                <div class="slds-m-around_medium">
+                    <img src={noDocumentAttachedImage}>
+                </div>
+                <!--Static Text-->
+                <div style="text-align: center;">
+                    <h1 style="font-size:large;">No Documents attached</h1>
+                    <p>Please attach documents (ex: Contractual<br>Document) for customer Sign-off</p>
+                </div>
+                </br>
+                </br>
+            </template>
+
+            <!--Second Screen with all Document fields , action buttons(unlink , download ) and Docusign Button-->
+            <template if:true={mccHasDocument}>
+                <div class="slds-grid slds-gutters slds-p-left_medium slds-m-top_medium">
+                    <div class=" slds-col slds-size_10-of-12 slds-p-left_medium">
+                        <label>The MCC Document can be generated in </label><a name="NGSC"
+                            class="slds-text-title_bold slds-text-heading_small" onclick={handleHTMLEvents}
+                            data-value={NGSCApplicationURL}>NGSC Application</a>
+                        <br />
+                        <br />
+                        <br />
+                        <!-- Added by Sankalp - CheckMarx Violation - Feb 2024 -->
+                        <a name="linkedContentName" class="slds-text-title_bold slds-text-heading_small"
+                            href={linkedContentNavigationURL} target="_blank">
+                            <!-- Added by Sankalp - CheckMarx Violation - Feb 2024 -->
+                            <lightning-formatted-text value={linkedContentName}></lightning-formatted-text>
+                        </a></br>
+                        <label style="margin-right: 8.2rem;">ID: </label>
+                            <!-- Added by Sankalp - CheckMarx Violation - Feb 2024 -->
+                            <lightning-formatted-text value={linkedContentId}></lightning-formatted-text>
+                        </br>
+                        <label style="margin-right: 4.9rem;">Created By: </label>
+                        <a>
+                            <!-- Added by Sankalp - CheckMarx Violation - Feb 2024 -->
+                            <lightning-formatted-text value={linkedContentAuthor}></lightning-formatted-text>
+                        </a>
+                        </br>
+                        <label style="margin-right: 6.7rem;">Status: </label>
+                            <!-- Added by Sankalp - CheckMarx Violation - Feb 2024 -->
+                            <lightning-formatted-text value={linkedContentStatus}></lightning-formatted-text>
+                    </br>
+                    </div>
+                    <div class=" slds-col slds-size_2-of-12 slds-p-left_medium">
+                        <lightning-button-Menu menu-alignment="right" icon-size="x-small" style="padding-left: 18.5px;">
+                            <!--Only if MCC status is Pre-Draft , Draft or Rejected Show Unlink-->
+                            <template if:true={showUnlinkButton}>
+                                <lightning-menu-item name="Unlink" value="Unlink" label="Unlink"
+                                    onclick={handleHTMLEvents}>
+                                </lightning-menu-item>
+                            </template>
+                            <lightning-menu-item name="Download" value="Download" label="Download"
+                                onclick={handleHTMLEvents}>
+                            </lightning-menu-item>
+                        </lightning-button-Menu>
+                    </div>
+                </div>
+                <div class="slds-p-left_medium slds-m-top_medium">
+                     <!--Added by Tirth DE388863 -->
+                    <template if:true={DocumentAcceptedOffline}>
+                        <template if:true={CustomerAcceptedContentStatus_new}> 
+                        <div>
+                            <label>Document Accepted by Customer(Offline)</label>
+                            <lightning-input name="DocumentAcceptedChecked" type="checkbox" label=" "
+                                onchange={handleHTMLEvents} checked disabled></lightning-input>
+                            </br>
+                        </div>
+                        </template>
+                        <template if:false={CustomerAcceptedContentStatus_new}> 
+                            <div>
+                                <label>Document Accepted by Customer(Offline)</label>
+                                <lightning-input name="DocumentAcceptedChecked" type="checkbox" label=" "
+                                    onchange={handleHTMLEvents} checked></lightning-input>
+                                </br>
+                            </div>
+                            </template>
+                             <!--Added by Tirth End  DE388863 -->
+                    </template>
+                    
+                    <template if:false={DocumentAcceptedOffline}>
+                        <!--
+                        <template if:true={CustomerAcceptedContentStatus}>
+                            <div>
+                                <label>Document Accepted by Customer(Offline)</label>
+                                <lightning-input name="DocumentAcceptedUnchecked" type="checkbox" label=" "
+                                    onchange={handleHTMLEvents} disabled></lightning-input>
+                                </br>
+                            </div>
+                        </template>
+                        -->
+                        <!--Added by Raj DE388863 -->
+                        <template if:true={CustomerAcceptedContentStatus_new}>  
+                            <div>
+                                <label>Document Accepted by Customer(Offline)</label>
+                                <lightning-input name="DocumentAcceptedChecked" disabled  type="checkbox" label=" "
+                                    onchange={handleHTMLEvents} ></lightning-input>
+                                </br> 
+                            </div>
+                        </template>
+                            <!--End DE388863 -->
+                        <template if:false={CustomerAcceptedContentStatus_new}> <!--Added by Raj DE388863, replace CustomerAcceptedContentStatus with CustomerAcceptedContentStatus_new -->
+                            <div>
+                                <label>Document Accepted by Customer(Offline)</label>
+                                <lightning-input name="DocumentAcceptedUnchecked" type="checkbox" label=" "
+                                    onchange={handleHTMLEvents}></lightning-input>
+                                </br>
+                            </div>
+                        </template>
+                    </template>
+                    <template if:false={DocumentAcceptedOffline}>
+
+                        <template if:true={SubmittedMCCStatus}>
+                            <div style="margin-right: 17px;" class="disabled">
+                                <label>Document Acceptor</label>
+                                <!--Custom Look to external customers-->
+                                <c-ds_cmp_-mcc-customer-lookup object-api-name="account" icon-name="standard:account"
+                                    record-id={recordId} selected-value={selectedValue}
+                                    selected-record-id={selectedRecordId} onrecordselection={onCustomerSelection}>
+                                </c-ds_cmp_-mcc-customer-lookup>
+                                </br>
+                            </div>
+                            <div style="margin-right: 17px;" class="disabled">
+                                <label>Document Acceptance Duration</label>
+                                <lightning-combobox name="autoacceptduration" value={autoacceptduration}
+                                    options={AutoAcceptDurationOptions} onchange={handleHTMLEvents}
+                                    style="margin-top:-17px">
+                                </lightning-combobox>
+                                </br>
+                            </div>
+                            <div class="disabled">
+                                <label>Auto-accepted on</label></br>
+                                    <a class="slds-text-title_bold slds-text-heading_small">
+                                    {willAcceptedOn}
+                                </a>
+                                </br>
+                            </div>
+                        </template>
+                        <template if:false={SubmittedMCCStatus}>
+                            <template if:true={CustomerAcceptedContentStatus}>
+                                <div style="margin-right: 17px;" class="disabled">
+                                    <label>Document Acceptor</label>
+                                    <!--Custom Look to external customers-->
+                                    <c-ds_cmp_-mcc-customer-lookup object-api-name="account"
+                                        icon-name="standard:account" record-id={recordId} selected-value={selectedValue}
+                                        selected-record-id={selectedRecordId} onrecordselection={onCustomerSelection}>
+                                    </c-ds_cmp_-mcc-customer-lookup>
+                                    </br>
+                                </div>
+                                <div style="margin-right: 17px;" class="disabled">
+                                    <label>Document Acceptance Duration</label>
+                                    <lightning-combobox name="autoacceptduration" value={autoacceptduration}
+                                        options={AutoAcceptDurationOptions} onchange={handleHTMLEvents}
+                                        style="margin-top:-17px">
+                                    </lightning-combobox>
+                                    </br>
+                                </div>
+                                <div class="disabled">
+                                    <label>Auto-accepted on</label></br>
+                                    <a class="slds-text-title_bold slds-text-heading_small">
+                                        {willAcceptedOn}
+                                    </a>
+                                    </br>
+                                </div>
+                            </template>
+                            <template if:false={CustomerAcceptedContentStatus}>
+                                <div style="margin-right: 17px;">
+                                    <label>Document Acceptor</label>
+                                    <!--Custom Look to external customers-->
+                                    <c-ds_cmp_-mcc-customer-lookup object-api-name="account"
+                                        icon-name="standard:account" record-id={recordId} selected-value={selectedValue}
+                                        selected-record-id={selectedRecordId} onrecordselection={onCustomerSelection}
+                                        onselectedlookupvalue={handleselectedlookupvalue}>
+                                    </c-ds_cmp_-mcc-customer-lookup>
+                                    </br>
+                                </div>
+                                <div style="margin-right: 17px;">
+                                    <label>Document Acceptance Duration</label>
+                                    <lightning-combobox name="autoacceptduration" value={autoacceptduration}
+                                        options={AutoAcceptDurationOptions} onchange={handleHTMLEvents}
+                                            style="margin-top:-17px" disabled={hideAcceptanceDuration}>
+                                    </lightning-combobox>
+                                    </br>
+                                </div>
+                                <div>
+                                    <label>Auto-accepted on</label></br>
+                                    <a class="slds-text-title_bold slds-text-heading_small">
+                                        {willAcceptedOn}
+                                    </a>
+                                    </br>
+                                </div>
+                            </template>
+
+                        </template>
+                        <div class="slds-clearfix" style="align-items: center; margin-top: 20px;">
+                            <template if:false={CustomerAcceptedContentStatus}>
+                                 <!-- Added by Sankalp - MCC Enhancements-->
+                                <!--eSignature team's DocuSign button LWC, docusignButton, added SOs - Shamal  -->
+                                <template if:false={ShowSaveButton}>
+                                    <c-docusign-button record-id={recordId} auto-accept-duration={autoacceptduration}
+                                        document-acceptor={docAccepter}                                                 
+                                        content-author={linkedContentAuthor}
+                                        onrevertoredit={handleRevertEdit}
+                                        onupdatecontentstatus={onContentStatusUpdate}
+                                        is-germany-operating-unit={isGermanyOperatingUnit}
+                                        link-content-status={linkedContentStatus}
+                                        auto-accept-date={willAcceptedOn}
+                                        sales-order={salesOrder}    
+                                        sales-order-line-nbr={salesOrderLineNbr}>
+                                    </c-docusign-button>
+                                    </template>
+                            </template>
+                            <template if:true={CustomerAcceptedContentStatus}>
+                                <template if:false={SubmittedMCCStatus}>
+                                    <lightning-button name="SubmitRAO" variant="brand"
+                                        type="Submit to Revenue Accounting Team"
+                                        label="Submit to Revenue Accounting Team" style="margin-left: 145px;"
+                                        onclick={handleHTMLEvents}>
+                                    </lightning-button>
+                                </template>
+                                <template if:true={SubmittedMCCStatus}>
+                                    <lightning-button name="SubmitRAO" variant="brand"
+                                        type="Submit to Revenue Accounting Team"
+                                        label="Submit to Revenue Accounting Team" style="margin-left: 145px;"
+                                        onclick={handleHTMLEvents} disabled>
+                                    </lightning-button>
+                                </template>
+                            </template>
+
+                            <!--         
+                            <template if:true={signaturePendingDocument}>
+                                <lightning-button variant="brand" type="submit" label="Stop Approval"
+                                    style="margin-left: 145px;" onclick={handleDocusignStopApprovalProcess}>
+                                </lightning-button>
+                            </template>
+                            <template if:false={signaturePendingDocument}>
+                                <lightning-button variant="brand" type="submit" label="Customer Acceptance"
+                                    style="margin-left: 145px;" onclick={handleDocusignEsignatureProcess}>
+                                </lightning-button>
+                            </template>-->
+                        </div>
+                    </template>
+                    <template if:true={DocumentAcceptedOffline}>
+                        <div style="margin-right: 17px;" class="disabled">
+                            <label>Document Acceptor</label>
+                            <!--Custom Look to external customers-->
+                            <c-ds_cmp_-mcc-customer-lookup object-api-name="account" icon-name="standard:account"
+                                onrecordselection={onCustomerSelection}></c-ds_cmp_-mcc-customer-lookup>
+                            </br>
+                        </div>
+                        <div style="margin-right: 17px;" class="disabled">
+                            <label>Document Acceptance Duration</label>
+                            <lightning-combobox name="autoacceptduration" value={autoacceptduration}
+                                options={AutoAcceptDurationOptions} onchange={handleHTMLEvents} disabled style="margin-top:-17px">
+                            </lightning-combobox>
+                            </br>
+                        </div>
+                        <div class="disabled">
+                            <label>Auto-accepted on</label></br>
+                            <a class="slds-text-title_bold slds-text-heading_small">
+                                MM-DD-YYYY
+                            </a>
+                            </br>
+                        </div>
+                        <div class="slds-clearfix" style="align-items: center; margin-top: 20px;">
+                            <template if:false={ShowSaveButton}>
+                                <template if:true={SubmittedMCCStatus}>
+                                    <lightning-button name="SubmitRAO" variant="brand"
+                                        type="Submit to Revenue Accounting Team"
+                                        label="Submit to Revenue Accounting Team" style="margin-left: 145px;"
+                                        onclick={handleHTMLEvents} disabled>
+                                    </lightning-button>
+                                </template>
+                                <template if:false={SubmittedMCCStatus}>
+                                    <lightning-button name="SubmitRAO" variant="brand"
+                                        type="Submit to Revenue Accounting Team"
+                                        label="Submit to Revenue Accounting Team" style="margin-left: 145px;"
+                                        onclick={handleHTMLEvents}>
+                                    </lightning-button>
+                                </template>
+
+                            </template>
+                        </div>
+                    </template>
+
+                            <template if:true={ShowSaveButton}>
+                                <lightning-button name="Save" variant="brand" type="submit" label="Save"
+                                    style="margin-left: 210px;" onclick={handleHTMLEvents}>
+                                </lightning-button>
+                            </template>
+                    
+                </div>
+            </template>
+        </template>
+        <!--Vamshi Changes -->
+        <template if:true={isSubmittedForRAO}>
+            <!-- Modal/Popup Box LWC starts here -->
+            <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true"
+                aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+                <div class="slds-modal__container">
+                    <!-- Modal/Popup Box LWC header here -->
+                    <header class="slds-modal__header">
+                        <button class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse"
+                            title="Close">
+                            <lightning-icon name="CloseSubmitToRaoModal" icon-name="utility:close"
+                                alternative-text="close" variant="inverse" size="small" onclick={handleHTMLEvents}>
+                            </lightning-icon>
+                            <span class="slds-assistive-text">Close</span>
+                        </button>
+                        <!--<h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Modal/PopUp Box header LWC</h2>-->
+                    </header>
+                    <!-- Modal/Popup Box LWC body starts here -->
+                    <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-beforRAO">
+                        <p style="padding-left: 93px;"><b>Please ensure the Actual Start/Finish date of the
+                                milestone (in Essentials tab) is
+                                specified correctly before submitting.
+                            </b></p>
+                    </div>
+                    <!-- Modal/Popup Box LWC footer starts here -->
+                    <footer class="slds-modal__footer">
+                        <button name="editMilestoneGermanMCC" class="slds-button slds-button_neutral"
+                            onclick={handleHTMLEvents} title="Edit the Milestone Start/Finish dates">Edit the Milestone
+                            Start/Finish dates</button>
+                        <button name="proceedGermanMCC" class="slds-button slds-button_brand" onclick={handleHTMLEvents}
+                            title="Proceed">Proceed</button>
+                    </footer>
+                </div>
+            </section>
+            <div class="slds-backdrop slds-backdrop_open"></div>
+        </template>
+        <!--Vamshi Changes End-->
+
+        <!--New Document Upload modal to Attach Document from system to a MCC-->
+        <template if:true={showUploadNewDocumentModal}>
+            <section role="dialog" tabindex="-1" class="slds-modal slds-fade-in-open slds-modal_medium"
+                aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1">
+                <div class="slds-modal__container modal-screen">
+                    <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                        <lightning-layout multiple-rows="true" class="modalWindow">
+                            <lightning-layout-item padding="around-small" size="12">
+                                <div class="page-section page-header">
+                                    <div class="slds-text-heading_large slds-text-title_bold">Upload New File</div>
+                                </div>
+                                <div>
+                                    <div class="slds-is-relative">
+                                        <template if:true={showSpinnerUpload}>
+                                            <c-cmp_-Reusable-spinner spinner-text={spinnerText2}>
+                                            </c-cmp_-Reusable-spinner>
+                                        </template>
+                                    </div>
+                                </div>
+                            </lightning-layout-item>
+                            <lightning-layout-item padding="around-small" size="12">
+                                <lightning-layout>
+                                    <lightning-layout-item padding="around-small" size="6">
+                                        <lightning-combobox name="Category" label="Category"
+                                            value={uploadNewFileCategory} class="comboBox"
+                                            placeholder={uploadNewFileCategoryLabel} options={options} read-only="true">
+                                        </lightning-combobox>
+                                    </lightning-layout-item>
+                                    <lightning-layout-item padding="around-small" size="6">
+                                        <lightning-input name="File" type="File" label="Select File to Upload"
+                                            onchange={handleHTMLEvents}></lightning-input>
+                                        <p>
+                                            <lightning-formatted-text value={fileName}></lightning-formatted-text>
+                                        </p>
+                                    </lightning-layout-item>
+                                </lightning-layout>
+                            </lightning-layout-item>
+                            <lightning-layout-item padding="around-small" size="6">
+                                <lightning-textarea name="Description" label="Content Name" value={description}
+                                    maxlength="80" class="description" onchange={handleHTMLEvents}></lightning-textarea>
+                            </lightning-layout-item>
+                        </lightning-layout>
+                        <div class="buttonPosition">
+                            <lightning-button variant="neutral" name="cancleUpload" label="Cancel" title="Close"
+                                onclick={handleHTMLEvents} class="slds-m-left_x-small"></lightning-button>
+                            <lightning-button name="Upload" variant="brand" label="Upload" title="Upload"
+                                onclick={handleHTMLEvents} class="slds-m-left_x-small"></lightning-button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            <div class="slds-backdrop slds-backdrop_open"></div>
+        </template>
+        <!--New Document Upload Modal Ends-->
+        <!--Link Document Modal Starts-->
+        <template if:true={showLinkExistingDocumentModal}>
+            <section role="dialog" tabindex="-1" class="slds-modal slds-fade-in-open slds-modal_medium"
+                aria-labelledby="modal-heading-02" aria-modal="true" aria-describedby="modal-content-id-2">
+                <div class="slds-modal__container modal-screen">
+                    <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-2">
+                        <lightning-layout multiple-rows="true" class="modalWindow">
+                            <lightning-layout-item padding="around-small" size="12">
+                                <div class="page-section page-header">
+                                    <div class="slds-text-heading_large slds-text-title_bold">Link Existing Document
+                                    </div>
+                                </div>
+                                <div>
+                                    <div class="slds-is-relative">
+                                        <template if:true={showSpinnerLinkExistingDocument}>
+                                            <c-cmp_-Reusable-spinner spinner-text={spinnerText5}>
+                                            </c-cmp_-Reusable-spinner>
+                                        </template>
+                                    </div>
+                                </div>
+                            </lightning-layout-item>
+                            <lightning-layout-item padding="around-small" size="12" style="margin-top: 16px;">
+                                <!--Table Starts-->
+                                <div style="height:240px;" class="slds-scrollable--y">
+                                    <lightning-datatable key-field="id" data={linkEligibleContents} columns={columns}
+                                        onrowaction={handleRowAction} enable-infinite-loading max-row-selection="1"
+                                        onrowselection={handleRowSelection}>
+                                    </lightning-datatable>
+                                </div>
+                                <!--Table Ends-->
+                            </lightning-layout-item>
+                        </lightning-layout>
+                        <div class="buttonPosition" style="margin-top: -50px">
+                            <lightning-button variant="neutral" label="Cancel" title="Close" name="Close"
+                                onclick={handleHTMLEvents} class="slds-m-left_x-small"></lightning-button>
+                            <lightning-button name="Submit" variant="brand" label="Submit" title="Submit"
+                                onclick={handleHTMLEvents} class="slds-m-left_x-small"></lightning-button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            <div class="slds-backdrop slds-backdrop_open"></div>
+        </template>
+        <!--Link Document Modal Ends-->
+
+    </lightning-card>
+</template>
